@@ -1,0 +1,12 @@
+[package]
+name = "cs-bite"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cs-bite"
+path = "src/main.rs"
+
+[dependencies]
+colored = "2.1"
+rand = "0.8"
