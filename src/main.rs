@@ -241,6 +241,294 @@ fn main() {
             "스레드 안전성을 타입 시스템으로 보장",
         ],
     },
+    CSTopic {
+        title: "Structs & Enums",
+        explanation: "데이터 그룹화와 값의 표현. Struct는 명명된 필드들의 조합, Enum은 여러 변형 중 하나를 선택. \
+                      NestJS 클래스보다 더 간결하고, 타입 안정성이 우수.",
+        code: r#"#[derive(Debug)]
+struct User {
+    name: String,
+    age: u32,
+}
+
+enum Status {
+    Active,
+    Inactive,
+    Banned { reason: String },
+}
+
+fn main() {
+    let user = User {
+        name: String::from("Alice"),
+        age: 30,
+    };
+    println!("{:?}", user);
+
+    let status = Status::Banned {
+        reason: String::from("spam"),
+    };
+    match status {
+        Status::Active => println!("User is active"),
+        Status::Inactive => println!("User is inactive"),
+        Status::Banned { reason } => println!("Banned: {}", reason),
+    }
+}
+"#,
+        key_points: [
+            "Struct: 캐리 단위 데이터 조직",
+            "Enum: 합 타입(sum type)으로 값의 선택 표현",
+            "#[derive(Debug)]로 자동 구현",
+        ],
+    },
+    CSTopic {
+        title: "Smart Pointers (Box, Rc)",
+        explanation: "Stack 대신 Heap에 데이터를 할당하거나, 다중 소유권을 관리. Box<T>는 단일 소유, \
+                      Rc<T>는 공유 소유권. 순환 참조를 피하려면 Weak<T> 사용.",
+        code: r#"use std::rc::Rc;
+
+fn main() {
+    // Box: 단일 소유권, Heap 할당
+    let b = Box::new(5);
+    println!("Box: {}", b);
+
+    // Rc: 참조 카운팅, 다중 소유권
+    let a = Rc::new(42);
+    let b = Rc::clone(&a);
+    let c = Rc::clone(&a);
+
+    println!("Count: {}", Rc::strong_count(&a));  // 3
+    println!("a: {}, b: {}, c: {}", a, b, c);
+}
+"#,
+        key_points: [
+            "Box<T>: Heap 할당, 단일 소유권",
+            "Rc<T>: 참조 카운팅으로 다중 소유권",
+            "순환 참조 발생 시 memory leak 가능 (Weak<T> 사용)",
+        ],
+    },
+    CSTopic {
+        title: "Iterators (고급)",
+        explanation: "지연 계산(lazy evaluation)을 활용한 효율적인 데이터 처리. map, filter, fold 등의 \
+                      함수형 메서드로 명확한 의도 표현. 성능 최적화.",
+        code: r#"fn main() {
+    let nums = vec![1, 2, 3, 4, 5];
+
+    // map + filter: 각 요소에 2를 곱하고, 5 이상만 필터링
+    let result: Vec<_> = nums.iter()
+        .map(|x| x * 2)
+        .filter(|x| x > &5)
+        .collect();
+    println!("Result: {:?}", result);  // [6, 8, 10]
+
+    // fold: 누적 계산
+    let sum = nums.iter().fold(0, |acc, x| acc + x);
+    println!("Sum: {}", sum);  // 15
+
+    // for_each: 부작용 발생
+    nums.iter().for_each(|x| print!("{} ", x));
+}
+"#,
+        key_points: [
+            "Iterator는 lazy: 필요할 때까지 계산 지연",
+            "map/filter/fold로 함수형 스타일",
+            "collect()로 구체 타입 생성",
+        ],
+    },
+    CSTopic {
+        title: "Modules & Crates",
+        explanation: "코드 조직화의 핵심. Crate는 바이너리 또는 라이브러리, Module은 내부 계층 구조. \
+                      pub으로 공개 범위 제어. 패키지 관리는 Cargo가 담당.",
+        code: r#"// lib.rs 또는 main.rs 상단
+pub mod math {
+    pub fn add(a: i32, b: i32) -> i32 {
+        a + b
+    }
+
+    pub fn multiply(a: i32, b: i32) -> i32 {
+        a * b
+    }
+}
+
+mod internal {
+    pub fn secret() {
+        println!("This is internal");
+    }
+}
+
+fn main() {
+    println!("2 + 3 = {}", math::add(2, 3));
+    println!("4 * 5 = {}", math::multiply(4, 5));
+
+    internal::secret();
+}
+"#,
+        key_points: [
+            "pub mod: 공개 모듈, pub fn: 공개 함수",
+            "비공개 요소는 mod로 시작하거나 pub 생략",
+            "Crate Root: lib.rs (라이브러리) 또는 main.rs (바이너리)",
+        ],
+    },
+    CSTopic {
+        title: "From & Into (타입 변환)",
+        explanation: "타입 간 변환을 안전하고 명시적으로 처리. From trait을 구현하면 Into는 자동 구현. \
+                      as (타입 캐스팅)과 달리 타입 검사와 검증을 강제.",
+        code: r#"#[derive(Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl From<(i32, i32)> for Point {
+    fn from(tuple: (i32, i32)) -> Self {
+        Point {
+            x: tuple.0,
+            y: tuple.1,
+        }
+    }
+}
+
+fn main() {
+    // From 사용
+    let p1: Point = (10, 20).into();
+    println!("{:?}", p1);  // Point { x: 10, y: 20 }
+
+    // 명시적 변환
+    let p2 = Point::from((5, 15));
+    println!("{:?}", p2);
+
+    // Into는 자동으로 구현됨
+    let tuple = (30, 40);
+    let p3: Point = tuple.into();
+    println!("{:?}", p3);
+}
+"#,
+        key_points: [
+            "From trait: T -> Self 변환, 실패할 수 없음",
+            "TryFrom: 실패 가능한 변환 (Result 반환)",
+            "Into는 From 구현 시 자동 생성 (무료 변환)",
+        ],
+    },
+    CSTopic {
+        title: "Macros (매크로)",
+        explanation: "컴파일 타임에 코드를 생성. vec!, println!, assert! 등이 매크로. \
+                      반복 코드를 줄이고, DSL(Domain Specific Language)을 만들 수 있다.",
+        code: r#"macro_rules! say_hello {
+    ($name:expr) => {
+        println!("Hello, {}!", $name);
+    };
+}
+
+macro_rules! max {
+    ($x:expr, $y:expr) => {
+        if $x > $y { $x } else { $y }
+    };
+}
+
+fn main() {
+    say_hello!("Alice");
+    say_hello!("Bob");
+
+    let result = max!(10, 20);
+    println!("Max: {}", result);
+
+    // 내장 매크로들
+    let v = vec![1, 2, 3, 4, 5];
+    println!("Vec: {:?}", v);
+
+    assert_eq!(2 + 2, 4);
+}
+"#,
+        key_points: [
+            "macro_rules!: 패턴 기반 매크로 정의",
+            "($name:expr) 등으로 인자 타입 지정",
+            "=> 이후 생성될 코드 작성",
+        ],
+    },
+    CSTopic {
+        title: "Option<T> (None 처리)",
+        explanation: "값이 없을 수 있는 상황을 타입으로 표현. null 포인터 대신 Option<T>로 \
+                      None인 경우를 강제로 처리. NestJS의 optional 필드와 다르게 컴파일 타임 검사.",
+        code: r#"fn find_user(id: u32) -> Option<String> {
+    if id == 1 {
+        Some(String::from("Alice"))
+    } else {
+        None
+    }
+}
+
+fn main() {
+    let user = find_user(1);
+
+    // match로 처리
+    match user {
+        Some(name) => println!("Found: {}", name),
+        None => println!("User not found"),
+    }
+
+    // if let로 간결하게
+    if let Some(name) = find_user(1) {
+        println!("Name: {}", name);
+    }
+
+    // unwrap: None이면 panic!
+    // let name = find_user(1).unwrap();
+
+    // unwrap_or: 기본값 제공
+    let name = find_user(999).unwrap_or_default();
+    println!("Default: {}", name);
+}
+"#,
+        key_points: [
+            "Option<T>: Some(value) 또는 None",
+            "match, if let, unwrap_or 등으로 안전 처리",
+            "None 처리를 빼먹을 수 없음 (컴파일 검사)",
+        ],
+    },
+    CSTopic {
+        title: "Testing (단위 테스트)",
+        explanation: "코드와 함께 테스트를 작성. #[test] 속성으로 테스트 함수 마킹. \
+                      cargo test로 실행. TDD와 리팩토링을 촉진.",
+        code: r#"pub fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+pub fn divide(a: i32, b: i32) -> Result<i32, String> {
+    if b == 0 {
+        Err(String::from("Cannot divide by zero"))
+    } else {
+        Ok(a / b)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add() {
+        assert_eq!(add(2, 3), 5);
+        assert_eq!(add(-1, 1), 0);
+    }
+
+    #[test]
+    fn test_divide() {
+        assert_eq!(divide(10, 2).unwrap(), 5);
+        assert!(divide(10, 0).is_err());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_panic() {
+        panic!("This should panic!");
+    }
+}
+"#,
+        key_points: [
+            "#[cfg(test)]로 테스트 모듈 격리",
+            "#[test]로 테스트 함수 표시",
+            "assert!, assert_eq!, assert_ne! 등의 매크로",
+        ],
+    },
 ];
 
 fn main() {
