@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cs-bite — Rust CS 학습</title>
+<style>
+/* ═══════════════ Reset & Base ═══════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #1c2333;
+  --border: #30363d; --text: #c9d1d9; --text-dim: #8b949e;
+  --accent: #58a6ff; --green: #3fb950; --yellow: #d29922;
+  --red: #f85149; --purple: #bc8cff; --cyan: #39d353;
+  --magenta: #f778ba; --orange: #f0883e;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --radius: 10px;
+}
+html { font-size: 15px; }
+body {
+  font-family: var(--font-sans); color: var(--text); background: var(--bg);
+  min-height: 100vh; line-height: 1.6;
+}
+
+/* ═══════════════ Header ═══════════════ */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,17,23,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.logo { font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+.logo span { color: var(--yellow); }
+.header-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+.btn {
+  padding: 0.4rem 0.9rem; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 0.85rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.btn-primary:hover { background: #388bfd; }
+
+/* ═══════════════ Layout ═══════════════ */
+.app { display: flex; min-height: calc(100vh - 52px); }
+
+/* Sidebar */
+.sidebar {
+  width: 260px; flex-shrink: 0; border-right: 1px solid var(--border);
+  background: var(--surface); overflow-y: auto; padding: 1rem 0;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.sidebar-section { margin-bottom: 0.5rem; }
+.sidebar-title {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;
+  padding: 0.4rem 1rem; color: var(--text-dim); font-weight: 600;
+}
+.sidebar-item {
+  padding: 0.35rem 1rem; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; gap: 0.4rem;
+  color: var(--text-dim); transition: all 0.12s;
+  border-left: 2px solid transparent;
+}
+.sidebar-item:hover { background: rgba(56,139,253,0.08); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(56,139,253,0.12); color: var(--accent);
+  border-left-color: var(--accent);
+}
+.sidebar-item .num { font-size: 0.75rem; color: var(--text-dim); min-width: 24px; }
+.sidebar-item .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-item .feats { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
+.feat-icon { font-size: 0.65rem; opacity: 0.5; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.sidebar-item:hover .feat-icon, .sidebar-item.active .feat-icon { opacity: 1; }
+.feat-icon .lucide { width: 14px; height: 14px; stroke-width: 2.5; }
+
+/* SVG Icons */
+.lucide { display: inline-block; vertical-align: text-bottom; }
+.section-title .lucide { width: 1.25em; height: 1.25em; margin-right: 0.2em; }
+.btn .lucide { width: 1.1em; height: 1.1em; margin-right: 0.3em; vertical-align: text-bottom; }
+.badge .lucide { width: 1em; height: 1em; margin-right: 0.2em; }
+
+/* Main */
+.main { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; max-width: 900px; }
+.main::-webkit-scrollbar { width: 6px; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ═══════════════ Topic View ═══════════════ */
+.topic-header {
+  margin-bottom: 2rem; padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.topic-meta {
+  display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-기초 { background: rgba(63,185,80,0.15); color: var(--green); }
+.badge-핵심 { background: rgba(88,166,255,0.15); color: var(--accent); }
+.badge-추상화 { background: rgba(188,140,255,0.15); color: var(--purple); }
+.badge-동시성 { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.badge-실전 { background: rgba(57,211,83,0.15); color: var(--cyan); }
+.badge-자료구조 { background: rgba(255,166,87,0.15); color: var(--orange); }
+.badge-운영체제 { background: rgba(188,140,255,0.15); color: var(--purple); }
+.badge-네트워크 { background: rgba(88,166,255,0.15); color: var(--accent); }
+.badge-데이터베이스 { background: rgba(247,120,186,0.15); color: var(--magenta); }
+.badge-counter {
+  background: rgba(139,148,158,0.12); color: var(--text-dim);
+}
+.topic-title {
+  font-size: 1.8rem; font-weight: 700; color: #f0f6fc; line-height: 1.3;
+  margin-bottom: 0.5rem;
+}
+.progress-bar {
+  width: 100%; height: 4px; background: var(--border); border-radius: 2px;
+  overflow: hidden; margin-top: 0.75rem;
+}
+.progress-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  transition: width 0.5s ease;
+}
+
+/* Section */
+.section { margin-bottom: 2rem; }
+.section-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 700; margin-bottom: 0.8rem;
+  color: var(--accent);
+}
+.section-title .icon { font-size: 1.1rem; }
+.section-body {
+  font-size: 0.92rem; line-height: 1.75; color: var(--text);
+  white-space: pre-wrap; word-break: keep-all;
+}
+
+/* Code Block */
+.code-wrap {
+  background: #0d1117; border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 1rem; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--text-dim);
+}
+.code-header .lang { font-weight: 600; color: var(--orange); }
+.copy-btn {
+  padding: 0.2rem 0.5rem; border-radius: 4px; border: none;
+  background: transparent; color: var(--text-dim); cursor: pointer;
+  font-size: 0.75rem; transition: all 0.15s;
+}
+.copy-btn:hover { background: rgba(56,139,253,0.15); color: var(--accent); }
+.code-block {
+  padding: 1rem 1.25rem; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65;
+  tab-size: 4;
+  white-space: pre;
+}
+.code-block::-webkit-scrollbar { height: 4px; }
+.code-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Syntax colors */
+.kw { color: #ff7b72; } /* fn let mut if else for while match return impl struct enum trait pub use mod move where self */
+.ty { color: #79c0ff; } /* String Vec Option Result bool usize i32 ... */
+.mac { color: #d2a8ff; } /* println! vec! */
+.str { color: #a5d6ff; }
+.fn-name { color: #d2a8ff; }
+.num-lit { color: #79c0ff; }
+
+/* Diagram */
+/* ═══════════════ Diagram ═══════════════ */
+.diagram-outer {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.diagram-outer::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(56,139,253,0.04) 0%, rgba(188,140,255,0.04) 50%, rgba(63,185,80,0.03) 100%);
+  pointer-events: none; z-index: 0;
+}
+.diagram-wrap {
+  position: relative; z-index: 1;
+  background: linear-gradient(180deg, #0d1117 0%, #111820 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.2rem 1.4rem;
+  font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.6;
+  overflow-x: auto; white-space: pre; color: var(--text);
+}
+/* Box drawing chars */
+.d-box { color: #58a6ff; opacity: 0.7; }
+/* Arrows */
+.d-arrow { color: #79c0ff; font-weight: bold; }
+.d-arrow-r { color: #f85149; font-weight: bold; }
+/* Section titles (─── line) */
+.d-sep { color: #30363d; }
+/* Check / Cross */
+.d-ok { color: #3fb950; font-weight: bold; }
+.d-err { color: #f85149; font-weight: bold; }
+/* Emphasis [brackets] */
+.d-em { color: #ffa657; font-weight: 700; }
+/* Keywords inside diagrams */
+.d-kw { color: #ff7b72; }
+.d-ty { color: #79c0ff; }
+/* Highlighted label (first non-indented line or special markers) */
+.d-label { color: #d2a8ff; font-weight: 700; }
+/* Subtle dim */
+.d-dim { color: #484f58; }
+/* Animated glow on container */
+.diagram-wrap { box-shadow: inset 0 0 60px rgba(56,139,253,0.03); }
+.diagram-wrap::-webkit-scrollbar { height: 4px; }
+.diagram-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Key Points */
+.key-points { list-style: none; }
+.key-points li {
+  padding: 0.5rem 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  font-size: 0.9rem;
+}
+.key-points li:last-child { border-bottom: none; }
+.key-points .dot { color: var(--yellow); flex-shrink: 0; margin-top: 2px; }
+
+/* Comparison Table */
+.compare-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85rem;
+}
+.compare-table th {
+  background: var(--surface2); padding: 0.5rem 0.75rem;
+  text-align: left; font-weight: 600; color: #f0f6fc;
+  border-bottom: 2px solid var(--border);
+}
+.compare-table td {
+  padding: 0.45rem 0.75rem; border-bottom: 1px solid rgba(48,54,61,0.5);
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table .icon-col { width: 30px; text-align: center; }
+.compare-table .icon-col.left-icon { color: var(--accent); }
+.compare-table .icon-col.right-icon { color: var(--green); }
+.compare-table .icon-col.diff-icon { color: var(--red); }
+.compare-table .icon-col.win-icon { color: var(--yellow); }
+.compare-table .icon-col.equal-icon { color: var(--text-dim); }
+
+/* ═══════════════ Welcome ═══════════════ */
+.welcome {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+  min-height: 60vh; padding: 2rem;
+}
+.welcome-icon { margin-bottom: 1.5rem; color: var(--accent); }
+.welcome-icon .lucide { width: 64px; height: 64px; stroke-width: 1.5; }
+.welcome-title { font-size: 2.2rem; font-weight: 700; color: #f0f6fc; margin-bottom: 0.5rem; }
+.welcome-sub { color: var(--text-dim); font-size: 1.1rem; margin-bottom: 2rem; }
+.welcome .btn-primary { font-size: 1rem; padding: 0.7rem 2rem; border-radius: 8px; }
+
+/* ═══════════════ Responsive ═══════════════ */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { padding: 1.2rem; }
+  .topic-title { font-size: 1.4rem; }
+  .mobile-toggle {
+    display: inline-flex !important; padding: 0.4rem; border: none;
+    background: none; color: var(--text); font-size: 1.2rem; cursor: pointer;
+  }
+}
+@media (min-width: 769px) {
+  .mobile-toggle { display: none !important; }
+}
+.sidebar.open { display: block; position: fixed; top: 52px; left: 0; bottom: 0; z-index: 99; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.section { animation: fadeIn 0.3s ease; }
+</style>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <button class="mobile-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+  <div class="logo"><i data-lucide="boxes" style="width:1.2rem;height:1.2rem;vertical-align:middle;margin-right:0.3rem;color:var(--accent)"></i>cs<span>-</span>bite</div>
+  <div style="font-size:0.8rem;color:var(--text-dim)">Interactive Rust CS Learning</div>
+  <div class="header-actions">
+    <button class="btn" onclick="showRandom()" title="Random Topic"><i data-lucide="shuffle"></i> Random</button>
+    <button class="btn" onclick="showList()" title="Topic Directory"><i data-lucide="book-open"></i> Directory</button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+  <!-- Main -->
+  <div class="main" id="main">
+    <div class="welcome">
+      <div class="welcome-icon"><i data-lucide="boxes"></i></div>
+      <div class="welcome-title">cs-bite</div>
+      <div class="welcome-sub">Bite-sized Rust Computer Science concepts.<br>Master high-performance systems one bite at a time.</div>
+      <button class="btn btn-primary" onclick="showRandom()"><i data-lucide="play" style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:0.3rem"></i> Start Learning</button>
+    </div>
+  </div>
+</div>
+
+<script src="topics.js"></script>
+<script>
+
+// ═══════════════ CATEGORY CONFIG ═══════════════
+const CATEGORIES = [
+  { name: "기초", icon: "sprout", desc: "언어의 첫걸음" },
+  { name: "핵심", icon: "gem", desc: "Rust다운 코드" },
+  { name: "추상화", icon: "puzzle", desc: "다형성과 재사용" },
+  { name: "동시성", icon: "zap", desc: "병렬과 안전" },
+  { name: "실전", icon: "hammer", desc: "실무 패턴" },
+  { name: "자료구조", icon: "network", desc: "데이터 구조화" },
+  { name: "운영체제", icon: "cpu", desc: "시스템의 심장" },
+  { name: "네트워크", icon: "globe", desc: "연결과 통신" },
+  { name: "데이터베이스", icon: "database", desc: "데이터 영속화" },
+];
+
+let currentIdx = -1;
+
+// ═══════════════ INIT ═══════════════
+function init() {
+  renderSidebar();
+  lucide.createIcons();
+}
+
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const topics = TOPICS.filter(t => t.category === cat.name);
+    if (!topics.length) return;
+    html += `<div class="sidebar-section">`;
+    html += `<div class="sidebar-title"><i data-lucide="${cat.icon}" style="width:1.2em;height:1.2em;vertical-align:text-bottom;margin-right:0.3rem"></i> ${cat.name}</div>`;
+    topics.forEach((t) => {
+      const globalIdx = TOPICS.indexOf(t);
+      const hasDiagram = t.diagram ? '<span class="feat-icon" title="Diagram"><i data-lucide="pen-tool"></i></span>' : '';
+      const hasComparison = (t.comparisons && t.comparisons.length) ? '<span class="feat-icon" title="Comparison"><i data-lucide="scale"></i></span>' : '';
+      
+      html += `<div class="sidebar-item" data-idx="${globalIdx}" onclick="showTopic(${globalIdx})">`;
+      html += `<span class="num">${globalIdx + 1}</span>`;
+      html += `<span class="title">${escHtml(t.title.split('—')[0].split('(')[0].trim())}</span>`;
+      html += `<div class="feats">${hasDiagram}${hasComparison}</div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  sidebar.innerHTML = html;
+}
+
+// ═══════════════ ACTIONS ═══════════════
+function showTopic(idx) {
+  currentIdx = idx;
+  const topic = TOPICS[idx];
+  const total = TOPICS.length;
+  const catIcon = CATEGORIES.find(c => c.name === topic.category)?.icon || 'file-text';
+
+  // Update sidebar active
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+
+  let html = '';
+
+  // Header
+  html += `<div class="topic-header">`;
+  html += `<div class="topic-meta">`;
+  html += `<span class="badge badge-${topic.category}"><i data-lucide="${catIcon}"></i> ${topic.category}</span>`;
+  html += `<span class="badge badge-counter">${idx+1} / ${total}</span>`;
+  html += `</div>`;
+  html += `<div class="topic-title">${escHtml(topic.title)}</div>`;
+  html += `<div class="progress-bar"><div class="progress-fill" style="width:${((idx+1)/total*100).toFixed(1)}%"></div></div>`;
+  html += `</div>`;
+
+  // Explanation
+  html += section('lightbulb', 'Concept', `<div class="section-body">${escHtml(topic.explanation)}</div>`);
+
+  // Why it matters
+  html += section('target', 'Why It Matters', `<div class="section-body">${escHtml(topic.whyItMatters)}</div>`);
+
+  // Comparisons
+  if (topic.comparisons && topic.comparisons.length) {
+    html += section('scale', 'Comparison Matrix', renderComparisonTable(topic.comparisons));
+  }
+
+  // Diagram
+  if (topic.diagram) {
+    html += section('pen-tool', 'Visual Diagram', `<div class="diagram-outer"><div class="diagram-wrap">${renderDiagram(topic.diagram)}</div></div>`);
+  }
+
+  // Code
+  html += section('code-2', 'Code Example', renderCodeBlock(topic.code));
+
+  // Key Points
+  html += section('key', 'Key Takeaways', renderKeyPoints(topic.keyPoints));
+
+  // Navigation
+  html += `<div style="display:flex;gap:0.5rem;margin-top:2rem;justify-content:center;flex-wrap:wrap">`;
+  if (idx > 0) html += `<button class="btn" onclick="showTopic(${idx-1})"><i data-lucide="chevron-left"></i> Previous</button>`;
+  html += `<button class="btn" onclick="showRandom()"><i data-lucide="shuffle"></i> Random</button>`;
+  if (idx < total - 1) html += `<button class="btn" onclick="showTopic(${idx+1})">Next <i data-lucide="chevron-right"></i></button>`;
+  html += `</div>`;
+
+  document.getElementById('main').innerHTML = html;
+  document.getElementById('main').scrollTop = 0;
+  lucide.createIcons();
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function showRandom() {
+  let idx;
+  do { idx = Math.floor(Math.random() * TOPICS.length); } while (idx === currentIdx && TOPICS.length > 1);
+  showTopic(idx);
+}
+
+function showList() {
+  let html = `<div style="margin-bottom:2rem">`;
+  html += `<div class="topic-title" style="font-size:1.5rem;margin-bottom:1rem"><i data-lucide="book-open" style="width:1.2em;height:1.2em;vertical-align:text-bottom;margin-right:0.3em;color:var(--accent)"></i> Topic Directory</div>`;
+
+  CATEGORIES.forEach(cat => {
+    const topics = TOPICS.map((t,i) => ({...t, idx: i})).filter(t => t.category === cat.name);
+    if (!topics.length) return;
+    html += `<div style="margin-bottom:1.5rem">`;
+    html += `<div style="font-size:0.9rem;font-weight:700;color:var(--yellow);margin-bottom:0.6rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border)"><i data-lucide="${cat.icon}" style="width:1.2em;height:1.2em;vertical-align:text-bottom;margin-right:0.3rem"></i> ${cat.name} <span style="font-weight:400;color:var(--text-dim);font-size:0.8rem;margin-left:0.5rem">${cat.desc}</span></div>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:0.5rem">`;
+    topics.forEach(t => {
+      const short = t.title.split('—')[0].split('(')[0].trim();
+      html += `<div class="sidebar-item" style="border-left:none;padding:0.4rem 0.6rem;cursor:pointer;background:rgba(255,255,255,0.03);border-radius:4px" onclick="showTopic(${t.idx})">`;
+      html += `<span class="num" style="color:var(--accent)">${t.idx+1}.</span> ${escHtml(short)}`;
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += `<div style="text-align:center;margin-top:2rem">`;
+  html += `<button class="btn btn-primary" onclick="showRandom()"><i data-lucide="shuffle"></i> Jump to Random Topic</button>`;
+  html += `</div></div>`;
+
+  document.getElementById('main').innerHTML = html;
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  currentIdx = -1;
+  lucide.createIcons();
+}
+
+// ═══════════════ RENDER HELPERS ═══════════════
+function section(iconName, title, bodyHtml) {
+  return `<div class="section">
+    <div class="section-title"><i data-lucide="${iconName}"></i> ${title}</div>
+    ${bodyHtml}
+  </div>`;
+}
+
+function renderCodeBlock(code) {
+  const highlighted = highlightRust(escHtml(code));
+  return `<div class="code-wrap">
+    <div class="code-header">
+      <span class="lang">rust</span>
+      <button class="copy-btn" onclick="copyCode(this)"><i data-lucide="copy" style="width:1em;height:1em;vertical-align:text-bottom;margin-right:0.2rem"></i> Copy</button>
+    </div>
+    <div class="code-block"><code>${highlighted}</code></div>
+  </div>`;
+}
+
+function renderKeyPoints(points) {
+  let html = '<ul class="key-points">';
+  points.forEach(p => {
+    html += `<li><span class="dot"><i data-lucide="check-circle-2" style="width:1.2em;height:1.2em;vertical-align:text-bottom"></i></span><span>${escHtml(p)}</span></li>`;
+  });
+  html += '</ul>';
+  return html;
+}
+
+function renderComparisonTable(comparisons) {
+  if (!comparisons.length) return '';
+  const cols = comparisons[0].length - 1; // first is type indicator
+  let html = `<div style="overflow-x:auto"><table class="compare-table"><thead><tr>`;
+  // Header row
+  comparisons[0].forEach((cell, ci) => {
+    if (ci === 0) return; // skip type
+    html += `<th>${escHtml(cell)}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  comparisons.slice(1).forEach(row => {
+    html += '<tr>';
+    const type = row[0];
+    const iconMap = { left: 'arrow-left', right: 'arrow-right', equal: 'minus', diff: 'git-compare', win: 'check', lose: 'x' };
+    const classMap = { left: 'left-icon', right: 'right-icon', equal: 'equal-icon', diff: 'diff-icon', win: 'win-icon', lose: 'lose-icon' };
+
+    row.slice(1).forEach((cell, ci) => {
+      if (ci === 0) {
+        html += `<td class="icon-col ${classMap[type] || ''}"><i data-lucide="${iconMap[type] || ''}" style="width:1.2em;height:1.2em"></i></td>`;
+      }
+      html += `<td>${escHtml(cell)}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderDiagram(diagram) {
+  let text = escHtml(diagram);
+
+  // 1) Separator lines (────────) → dim
+  text = text.replace(/(─{5,})/g, '<span class="d-sep">$1</span>');
+
+  // 2) Box-drawing characters ┌ ┐ └ ┘ │ ├ ┤ ┬ ┴ ┼ ─
+  text = text.replace(/([┌┐└┘├┤┬┴┼─]+)/g, function(m) {
+    // don't re-wrap already wrapped separators
+    if (m.startsWith('─') && m.length > 4) return m;
+    return '<span class="d-box">' + m + '</span>';
+  });
+  // Single vertical bar │ that's not inside a span
+  text = text.replace(/│/g, '<span class="d-box">│</span>');
+
+  // 3) Arrows
+  text = text.replace(/──►/g, '<span class="d-arrow">──►</span>');
+  text = text.replace(/◄──/g, '<span class="d-arrow-r">◄──</span>');
+  text = text.replace(/─►/g, '<span class="d-arrow">─►</span>');
+  text = text.replace(/◄─/g, '<span class="d-arrow-r">◄─</span>');
+  text = text.replace(/→/g, '<span class="d-arrow">→</span>');
+  text = text.replace(/←/g, '<span class="d-arrow-r">←</span>');
+  text = text.replace(/⇒/g, '<span class="d-arrow">⇒</span>');
+  text = text.replace(/⇐/g, '<span class="d-arrow-r">⇐</span>');
+  text = text.replace(/▼/g, '<span class="d-arrow">▼</span>');
+  text = text.replace(/↑/g, '<span class="d-arrow">↑</span>');
+  text = text.replace(/↓/g, '<span class="d-arrow">↓</span>');
+
+  // 4) Checkmarks & crosses
+  text = text.replace(/(✓|✔)/g, '<span class="d-ok">$1</span>');
+  text = text.replace(/(✕|✗|✘)/g, '<span class="d-err">$1</span>');
+  text = text.replace(/(OK!)/g, '<span class="d-ok">$1</span>');
+  text = text.replace(/(에러!)/g, '<span class="d-err">$1</span>');
+
+  // 5) Emphasis: [brackets]
+  text = text.replace(/\[([^\]]+)\]/g, '<span class="d-em">[$1]</span>');
+
+  // 6) Diagram-local keywords (only in obvious code-like patterns)
+  const diagKws = ['let ','mut ','fn ','struct ','enum ','impl ','pub ','use ','mod ','move ','return ','match ','self'];
+  diagKws.forEach(kw => {
+    // Only colorize if preceded by typical diagram context
+    text = text.replace(new RegExp('\\b(' + kw.trim() + ')\\b', 'g'), '<span class="d-kw">$1</span>');
+  });
+
+  // 7) Diagram-local types
+  const diagTypes = ['String','Vec','Option','Result','bool','usize','i32','i64','u32','u8','f64','f32','char','Heap','Stack','스택'];
+  diagTypes.forEach(ty => {
+    text = text.replace(new RegExp('\\b(' + ty + ')\\b', 'g'), '<span class="d-ty">$1</span>');
+  });
+
+  // 8) Dim comments-like annotations ← →
+  text = text.replace(/( ← .+)$/gm, '<span class="d-dim">$1</span>');
+
+  return text;
+}
+
+// ═══════════════ SYNTAX HIGHLIGHTING ═══════════════
+function highlightRust(code) {
+  // Strings (simple — double quotes)
+  code = code.replace(/("(?:[^"\\]|\\.)*")/g, '<span class="str">$1</span>');
+
+  // Keywords
+  const kws = ['fn','let','mut','const','pub','use','mod','struct','enum','impl','trait',
+    'match','if','else','for','while','loop','return','move','where','self','super','crate',
+    'type','true','false','as','ref','static','dyn','async','await','break','continue','in'];
+  kws.forEach(kw => {
+    const re = new RegExp('\\b(' + kw + ')\\b', 'g');
+    code = code.replace(re, '<span class="kw">$1</span>');
+  });
+
+  // Types
+  const types = ['String','Vec','Option','Result','HashMap','Box','Rc','Arc','Mutex',
+    'RefCell','bool','usize','i8','i16','i32','i64','u8','u16','u32','u64',
+    'f32','f64','char','Self','Duration'];
+  types.forEach(ty => {
+    const re = new RegExp('\\b(' + ty + ')\\b', 'g');
+    code = code.replace(re, '<span class="ty">$1</span>');
+  });
+
+  // Macros
+  code = code.replace(/\b(println!|format!|vec!|assert_eq!|assert_ne!|assert!|panic!|dbg!|todo!|unimplemented!)\b/g,
+    '<span class="mac">$1</span>');
+
+  // Some/None/Ok/Err
+  code = code.replace(/\b(Some|None|Ok|Err)\b/g, '<span class="ty">$1</span>');
+
+  // Numeric literals
+  code = code.replace(/\b(\d[\d_]*)\b/g, '<span class="num-lit">$1</span>');
+
+  return code;
+}
+
+// ═══════════════ UTILS ═══════════════
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyCode(btn) {
+  const codeEl = btn.closest('.code-wrap').querySelector('code');
+  const text = codeEl.textContent || codeEl.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = '<i data-lucide="check" style="width:1em;height:1em;vertical-align:text-bottom;margin-right:0.2rem"></i> Copied!';
+    lucide.createIcons({ root: btn });
+    setTimeout(() => {
+      btn.innerHTML = '<i data-lucide="copy" style="width:1em;height:1em;vertical-align:text-bottom;margin-right:0.2rem"></i> Copy';
+      lucide.createIcons({ root: btn });
+    }, 1500);
+  });
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' && currentIdx > 0) showTopic(currentIdx - 1);
+  if (e.key === 'ArrowRight' && currentIdx < TOPICS.length - 1) showTopic(currentIdx + 1);
+  if (e.key === 'r' || e.key === 'R') { if (!e.ctrlKey && !e.metaKey) showRandom(); }
+});
+
+// Init
+init();
+</script>
+</body>
+</html>

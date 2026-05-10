@@ -104,7 +104,7 @@ cd web && python3 -m http.server 8080
 | 5 | 제어 흐름 | if식, loop값반환, for..in, range |
 | 6 | Vec\<T\>와 HashMap\<K,V\> | 동적배열, 해시맵, `get()` 안전접근 |
 
-### ⚙ 핵심 — Rust다운 코드
+### 💎 핵심 — Rust다운 코드
 | # | 토픽 | 핵심 내용 |
 |---|------|----------|
 | 7 | Struct & impl | 구조체, 메서드, 연관함수, derive |
@@ -129,7 +129,7 @@ cd web && python3 -m http.server 8080
 | 18 | Threads & Mutex | spawn, Arc\<Mutex\<T\>\>, Send/Sync |
 | 19 | Channels | mpsc, 소유권 이전, Producer-Consumer |
 
-### 🛠 실전 — 실무 패턴
+### 🏗 실전 — 실무 패턴
 | # | 토픽 | 핵심 내용 |
 |---|------|----------|
 | 20 | Module System | mod, use, pub, 가시성, 파일 매핑 |

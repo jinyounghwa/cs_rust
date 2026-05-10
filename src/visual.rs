@@ -1,4 +1,5 @@
 use colored::*;
+use unicode_width::UnicodeWidthStr;
 
 /// 다이어그램을 비주얼 박스로 감싸서 출력
 pub fn render_diagram(diagram: &str) {
@@ -6,12 +7,14 @@ pub fn render_diagram(diagram: &str) {
         return;
     }
     println!();
-    println!("{}", "  📐 시각화 다이어그램".bright_cyan().bold());
-    println!("{}", "  ┌─────────────────────────────────────────────────────────┐".bright_black());
+    println!("{}", "  📐 Visual Diagram".bright_cyan().bold());
+    println!("{}", "  ┌──────────────────────────────────────────────────────────┐".bright_black());
     for line in diagram.lines() {
-        println!("  {} {:<57} {}", "│".bright_black(), colorize_diagram_line(line), "│".bright_black());
+        let display_width = line.width();
+        let padding = if display_width < 58 { " ".repeat(58 - display_width) } else { "".to_string() };
+        println!("  {} {}{} {}", "│".bright_black(), colorize_diagram_line(line), padding, "│".bright_black());
     }
-    println!("{}", "  └─────────────────────────────────────────────────────────┘".bright_black());
+    println!("{}", "  └──────────────────────────────────────────────────────────┘".bright_black());
 }
 
 /// 다이어그램 라인에 컬러 적용
@@ -69,13 +72,13 @@ pub fn render_comparisons(comparisons: &[&str]) {
         return;
     }
 
-    // 컬럼 너비 계산
-    let left_w = parts.iter().map(|p| p[1].len()).max().unwrap_or(10).max(10);
-    let right_w = parts.iter().map(|p| p[2].len()).max().unwrap_or(10).max(10);
-    let mid_w = left_w + right_w + 7;
+    // 컬럼 너비 계산 (아이콘 공간 고려)
+    let left_w = parts.iter().map(|p| p[1].width()).max().unwrap_or(10).max(12) + 4;
+    let right_w = parts.iter().map(|p| p[2].width()).max().unwrap_or(10).max(12) + 1;
+    let mid_w = left_w + right_w + 1;
 
     println!();
-    println!("{}", "  ⚖ 비교 표".bright_magenta().bold());
+    println!("{}", "  ⚖  Comparison Matrix".bright_magenta().bold());
 
     // 헤더
     let header = &parts[0];
@@ -83,16 +86,23 @@ pub fn render_comparisons(comparisons: &[&str]) {
         "  {}",
         format!("┌─{:─^width$}─┐", "", width = mid_w).bright_black()
     );
+    
+    let h1 = header[1];
+    let h2 = header[2];
+    let h1_pad = " ".repeat(left_w.saturating_sub(h1.width()));
+    let h2_pad = " ".repeat(right_w.saturating_sub(h2.width()));
+
     println!(
-        "  {} {:^left_w$} {} {:^right_w$} {}",
+        "  {} {}{} {} {}{} {}",
         "│".bright_black(),
-        header[1].bright_white().bold(),
+        h1.bright_white().bold(),
+        h1_pad,
         "│".bright_black(),
-        header[2].bright_white().bold(),
+        h2.bright_white().bold(),
+        h2_pad,
         "│".bright_black(),
-        left_w = left_w + 1,
-        right_w = right_w + 1,
     );
+
     println!(
         "  {}",
         format!("├─{:─^width$}─┤", "", width = mid_w).bright_black()
@@ -103,23 +113,38 @@ pub fn render_comparisons(comparisons: &[&str]) {
         if row.len() < 3 {
             continue;
         }
-        let left_icon = match row[0] {
-            "left" => " ◀".bright_blue().to_string(),
-            "right" => " ▶".bright_green().to_string(),
-            "equal" => " ■".bright_yellow().to_string(),
-            "diff" => " ✦".bright_red().to_string(),
-            "win" => " ✔".bright_green().to_string(),
-            "lose" => " ✘".bright_red().to_string(),
-            _ => "  ".to_string(),
+        let (icon, icon_color) = match row[0] {
+            "left" => (" ◀ ", "blue"),
+            "right" => (" ▶ ", "green"),
+            "equal" => (" ◈ ", "yellow"),
+            "diff" => (" ✦ ", "red"),
+            "win" => (" ✓ ", "green"),
+            "lose" => (" ✕ ", "red"),
+            _ => ("   ", "white"),
         };
+        
+        let icon_colored = match icon_color {
+            "blue" => icon.bright_blue(),
+            "green" => icon.bright_green(),
+            "yellow" => icon.bright_yellow(),
+            "red" => icon.bright_red(),
+            _ => icon.white(),
+        }.to_string();
+
+        let l_text = row[1];
+        let r_text = row[2];
+        let l_pad = " ".repeat(left_w.saturating_sub(l_text.width() + 3));
+        let r_pad = " ".repeat(right_w.saturating_sub(r_text.width()));
+
         println!(
-            "  {} {}{} {} {}{} {}",
+            "  {} {}{}{} {} {}{} {}",
             "│".bright_black(),
-            left_icon,
-            row[1].cyan(),
+            icon_colored,
+            l_text.cyan(),
+            l_pad,
             "│".bright_black(),
-            " ",
-            row[2].white(),
+            r_text.white(),
+            r_pad,
             "│".bright_black(),
         );
     }
@@ -134,10 +159,10 @@ pub fn render_comparisons(comparisons: &[&str]) {
 pub fn category_emoji(category: &str) -> &'static str {
     match category {
         "기초" => "🌱",
-        "핵심" => "⚙",
+        "핵심" => "💎",
         "추상화" => "🧩",
         "동시성" => "⚡",
-        "실전" => "🛠",
+        "실전" => "🏗",
         _ => "📝",
     }
 }

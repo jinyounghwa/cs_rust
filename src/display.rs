@@ -33,16 +33,16 @@ pub fn print_topic(topic: &CSTopic, idx: usize, total: usize) {
 
     // 개념 설명
     println!();
-    println!("{}", "  💡 개념 설명".bright_cyan().bold());
-    println!("{}", "  ────────────────────────────────────────────────────".bright_black());
+    println!("{}", "  💡 Concept".bright_cyan().bold());
+    println!("{}", "  ──────────────────────────────────────────────────────".bright_black());
     for line in topic.explanation.lines() {
         println!("  {}", line);
     }
 
     // 왜 중요한가?
     println!();
-    println!("{}", "  🎯 왜 중요한가?".bright_magenta().bold());
-    println!("{}", "  ────────────────────────────────────────────────────".bright_black());
+    println!("{}", "  🎯 Why It Matters".bright_magenta().bold());
+    println!("{}", "  ──────────────────────────────────────────────────────".bright_black());
     for line in topic.why_it_matters.lines() {
         println!("  {}", line);
     }
@@ -55,19 +55,21 @@ pub fn print_topic(topic: &CSTopic, idx: usize, total: usize) {
 
     // 코드 예제
     println!();
-    println!("{}", "  🔧 코드 예제".bright_green().bold());
-    println!("{}", "  ┌─────────────────────────────────────────────────────────┐".bright_black());
+    println!("{}", "  💻 Code Example".bright_green().bold());
+    println!("{}", "  ┌──────────────────────────────────────────────────────────┐".bright_black());
     for line in topic.code.lines() {
-        println!("  {} {:<57} {}", "│".bright_black(), colorize_code_line(line), "│".bright_black());
+        let display_width = line.len(); // Simple approximation for code
+        let padding = if display_width < 58 { " ".repeat(58 - display_width) } else { "".to_string() };
+        println!("  {} {}{} {}", "│".bright_black(), colorize_code_line(line), padding, "│".bright_black());
     }
-    println!("{}", "  └─────────────────────────────────────────────────────────┘".bright_black());
+    println!("{}", "  └──────────────────────────────────────────────────────────┘".bright_black());
 
     // 핵심 포인트
     println!();
-    println!("{}", "  📌 핵심 포인트".bright_yellow().bold());
-    println!("{}", "  ────────────────────────────────────────────────────".bright_black());
+    println!("{}", "  🔑 Key Takeaways".bright_yellow().bold());
+    println!("{}", "  ──────────────────────────────────────────────────────".bright_black());
     for (i, point) in topic.key_points.iter().enumerate() {
-        println!("  {} {} {}", "●".yellow(), point, format!("({})", i + 1).bright_black());
+        println!("  {} {} {}", "•".yellow(), point, format!("({})", i + 1).bright_black());
     }
     println!();
 }
@@ -141,10 +143,10 @@ pub fn list_topics(topics: &[CSTopic]) {
 
     let categories = [
         ("기초", "🌱", "언어의 첫걸음"),
-        ("핵심", "⚙", "Rust다운 코드"),
+        ("핵심", "💎", "Rust다운 코드"),
         ("추상화", "🧩", "다형성과 재사용"),
         ("동시성", "⚡", "병렬과 안전"),
-        ("실전", "🛠", "실무 패턴"),
+        ("실전", "🏗", "실무 패턴"),
     ];
 
     for (cat, emoji, desc) in &categories {
@@ -157,7 +159,7 @@ pub fn list_topics(topics: &[CSTopic]) {
 
         if !topics_in_cat.is_empty() {
             println!("  {} {} {} — {}", emoji, cat.bright_yellow().bold(), desc.bright_black(), format!("{}개", topics_in_cat.len()).bright_white());
-            println!("  {}", "─".repeat(52).bright_black());
+            println!("  {}", "─".repeat(54).bright_black());
             for (i, topic) in &topics_in_cat {
                 let has_diagram = if !topic.diagram.is_empty() { " 📐" } else { "" };
                 let has_comparison = if !topic.comparisons.is_empty() { " ⚖" } else { "" };
@@ -173,13 +175,13 @@ pub fn list_topics(topics: &[CSTopic]) {
         }
     }
 
-    println!("{}", "  ────────────────────────────────────────────────────".bright_black());
+    println!("{}", "  ──────────────────────────────────────────────────────".bright_black());
     println!(
         "  {} {}  {} | {} | {}",
-        "총".bright_white(),
-        format!("{}개", topics.len()).bright_cyan().bold(),
+        "Total:".bright_white(),
+        format!("{} topics", topics.len()).bright_cyan().bold(),
         "cs-bite".bright_white(),
-        "cs-bite <번호>".bright_black(),
+        "cs-bite <num>".bright_black(),
         "cs-bite run".bright_black(),
     );
     println!();
